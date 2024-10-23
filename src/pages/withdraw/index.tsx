@@ -1,6 +1,5 @@
-import { Box, TextField, Typography } from '@mui/material';
+import { Box, Grid, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import Grid from '@mui/material/Grid2';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NextPage } from 'next';
 import { useEffect, useState, useMemo } from 'react';
@@ -36,7 +35,7 @@ const Withdraw: NextPage = () => {
         <Typography sx={{ fontSize: '30px', fontWeight: 'bold' }}>Rcc Stake</Typography>
         <Typography sx={{}}>Stake ETH to earn tokens.</Typography>
         <Box sx={{ border: '1px solid #eee', borderRadius: '12px', p: '20px', width: '600px', mt: '30px' }}>
-          <Grid sx={{
+          <Grid container sx={{
             mb: '60px',
             '& .title': {
               fontSize: '15px',
@@ -47,18 +46,24 @@ const Withdraw: NextPage = () => {
               fontWeight: 'bold'
             }
           }}>
-            <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
-              <Box className="title">Staked Amount: </Box>
-              <Box className="val">{userData.staked} ETH</Box>
-            </Box>
-            <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
-              <Box className="title">Available to withdraw: </Box>
-              <Box className="val">{userData.withdrawable} ETH</Box>
-            </Box>
-            <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
-              <Box className="title">Pending Withdraw: </Box>
-              <Box className="val">{userData.withdrawPending} ETH</Box>
-            </Box>
+            <Grid item xs={4}>
+              <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
+                <Box className="title">Staked Amount: </Box>
+                <Box className="val">{userData.staked} ETH</Box>
+              </Box>
+            </Grid>
+            <Grid item xs={4}>
+              <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
+                <Box className="title">Available to withdraw: </Box>
+                <Box className="val">{userData.withdrawable} ETH</Box>
+              </Box>
+            </Grid>
+            <Grid item xs={4}>
+              <Box display={'flex'} alignItems={'center'} flexDirection={'column'}>
+                <Box className="title">Pending Withdraw: </Box>
+                <Box className="val">{userData.withdrawPending} ETH</Box>
+              </Box>
+            </Grid>
           </Grid>
           <Box sx={{ fontSize: '20px', mb: '10px' }}>Unstake</Box>
           <TextField onChange={e => {
