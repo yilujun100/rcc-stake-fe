@@ -2,8 +2,14 @@ import { Box, Grid, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NextPage } from 'next';
-import { useEffect, useState, useMemo } from 'react';
-import { useAccount } from 'wagmi';
+import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useStakeContract } from '../../hooks/useContract';
+import { Pid } from '../../utils';
+import { useAccount, useWalletClient } from 'wagmi';
+import { waitForTransactionReceipt } from 'viem/actions';
+import { formatUnits, parseUnits, zeroAddress } from 'viem';
+import { toast } from 'react-toastify';
+import Header from '../../components/Header';
 
 export type UserStakeData = {
   staked: string,
@@ -18,16 +24,69 @@ const InitData = {
 };
 
 const Withdraw: NextPage = () => {
+  const stakeContract = useStakeContract();
   const { address, isConnected } = useAccount();
   const [amount, setAmount] = useState('0');
+  const [unstakeLoading, setUnstakeLoading] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const { data } = useWalletClient();
   const [userData, setUserData] = useState<UserStakeData>(InitData);
 
   const isWithdrawable = useMemo(() => {
     return Number(userData.withdrawable) > 0 && isConnected;
   }, [userData, isConnected]);
 
-  const handleWithdraw = () => {};
+  useEffect(() => {
+    if (stakeContract && address) {
+      getUserData();
+    }
+  }, [address, stakeContract]);
+
+  const getUserData = async () => {
+    if (!stakeContract || !address) return;
+    const staked = await stakeContract?.read.stakingBalance([Pid, address]);
+    // @ts-ignore
+    const [requestAmount, pendingWithdrawAmount] = await stakeContract.read.withdrawAmount([Pid, address]);
+    const ava = Number(formatUnits(pendingWithdrawAmount, 18));
+    const p = Number(formatUnits(requestAmount, 18));
+    console.log({ p, ava });
+    setUserData({
+      staked: formatUnits(staked as bigint, 18),
+      withdrawPending: (p - ava).toFixed(4),
+      withdrawable: ava.toString()
+    });
+  };
+
+  const handleUnStake = async () => {
+    if (!stakeContract || !data) return;
+    try {
+      setUnstakeLoading(true);
+      const tx = await stakeContract.write.unstake([Pid, parseUnits(amount, 18)]);
+      const res = await waitForTransactionReceipt(data, { hash: tx });
+      toast.success('Transaction receipt!');
+      setUnstakeLoading(false);
+      getUserData();
+    } catch (error) {
+      setUnstakeLoading(false);
+      console.log(error, 'stake-error');
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!stakeContract || !data) return;
+    try {
+      setWithdrawLoading(true);
+      const tx = await stakeContract.write.withdraw([Pid]);
+      const res = await waitForTransactionReceipt(data, { hash: tx });
+      console.log(res, 'withdraw-res');
+      toast.success('Transaction receipt!');
+      setWithdrawLoading(false);
+      getUserData();
+    } catch (error) {
+      setWithdrawLoading(false);
+      console.log(error, 'stake-error');
+    }
+  };
 
   return (
     <>
@@ -71,6 +130,7 @@ const Withdraw: NextPage = () => {
           }} sx={{ minWidth: '300px' }} label="Amount" variant="outlined" />
           <Box mt='20px'>
             {
+              !isConnected ? <ConnectButton /> : <LoadingButton variant="contained" loading={unstakeLoading} onClick={handleUnStake}>UnStake</LoadingButton>
             }
           </Box>
           <Box sx={{ fontSize: '20px', mb: '10px', mt: '40px' }}>Withdraw</Box>
